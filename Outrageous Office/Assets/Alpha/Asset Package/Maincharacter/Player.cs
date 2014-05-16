@@ -9,12 +9,13 @@ public enum PlayerDirection
     WEST
 };
 
-public class Player : MonoBehaviour
-{
+public class Player : MonoBehaviour {
 
     //Temporary variables
+    private Vector2 TempVector2 = new Vector2();
     private bool m_HasCollided = false;
     private float AchievedPoint = 0f;
+    public int CollisionObject = -1;
 
 
     //Obstacles and Powerups
@@ -25,6 +26,7 @@ public class Player : MonoBehaviour
     public int BluePoints;
     public int RedPoints;
 
+    private bool SHIELD;        //SHIELD
     public float ShieldCooldown;
 
     //Highscore points
@@ -81,18 +83,21 @@ public class Player : MonoBehaviour
 
     public Vector2 LeftHand = new Vector2(0f, 0f), RightHand = new Vector2(0f, 0f);     //Hand
     public float HandMovementScale;                                                     //Movement
+    private float HalfTheCollider;
     public float Threshold;
     private GameObject[] Arms = new GameObject[2];
+
+
 
     //Sideways
     private float PreviousKinectPosition;
     public float LeanThreshold;
-
+    
     //Debug
     private Vector3 Debugvector = new Vector3();
 
-    // Use this for initialization
-    void Start()
+	// Use this for initialization
+	void Start () 
     {
         //DeltaPos = new Vector3(SW.bonePos[0, 11].x, 0.0f, SW.bonePos[0, 11].z);
 
@@ -103,17 +108,19 @@ public class Player : MonoBehaviour
         GameObject go = GameObject.Find("MainCharacterCode");
 
         Threshold = go.GetComponent<BoxCollider>().bounds.size.x / 2;
+        HalfTheCollider = go.GetComponent<BoxCollider>().bounds.size.x / 2;
 
         Rotate = false;
         RotateLeft = false;
         CanRotate = true;
 
+
         Arms[0] = transform.FindChild("RightArm").gameObject;
         Arms[1] = transform.FindChild("LeftArm").gameObject;
-    }
-
-    // Update is called once per frame
-    void Update()
+	}
+	
+	// Update is called once per frame
+	void Update () 
     {
         m_HasCollided = false;
         AchievedPoint = 0f;
@@ -123,6 +130,10 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape))
             Application.Quit();
 
+        if (Application.loadedLevelName == "Score")
+        {
+            Destroy(this.gameObject);
+        }
 
         if (DoneWithSession)
         {
@@ -130,7 +141,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            if(StartMoving)
+            if (StartMoving)
             {
                 if (Rotate)
                 {
@@ -155,29 +166,26 @@ public class Player : MonoBehaviour
 
                     Rotate = false;
                 }
+            }
 
-                Movement();
-            }
-            else
-            {
-                StartCoroutine("StartCooldown");
-            }
+            Movement();
+            
         }
-    }
+	}
 
     void Movement()
     {
         //Move player
-        if (UsingKinect)
+        if(UsingKinect)
         {
-            if (Skeletor != null)
+            if(Skeletor != null)
             {
                 DeltaMovement = -KPC.Delta;
-
+            
                 HandMovement();
-
+                
                 /** */
-                if (LEANING)
+                if(LEANING)
                 {
                     Leaning();
                 }
@@ -186,7 +194,7 @@ public class Player : MonoBehaviour
                     Positioning();
                 }
 
-
+                
             }
         }
         //A-D keys and controller
@@ -195,15 +203,15 @@ public class Player : MonoBehaviour
             //Xbox 360 controller
             JoystickForce = Input.GetAxis("Horizontal");
             //Movement from left to right on the screen
-            if (Mathf.Abs(JoystickForce) > 0)
+            if(Mathf.Abs(JoystickForce) > 0)
             {
                 rigidbody.AddForce(rigidbody.transform.right * TurnSpeed * JoystickForce);
 
-                if (JoystickForce > 0.2)
+                if(JoystickForce > 0.2)
                 {
                     anim.SetBool("TurnRight", true);
                 }
-                if (JoystickForce < -0.2)
+                if(JoystickForce < -0.2)
                 {
                     anim.SetBool("TurnLeft", true);
                 }
@@ -215,19 +223,20 @@ public class Player : MonoBehaviour
             }
         }
 
-        if (!WinningStatus)
+        if(!WinningStatus)
         {
             CheckLose();
         }
-
+        
 
         //Increasing the movement forward
-        if (rigidbody.velocity.magnitude < MaxSpeed && !WinningStatus)
+        if(rigidbody.velocity.magnitude < MaxSpeed && !WinningStatus)
         {
             if (UsingKinect)
             {
                 Debug.Log(Skeletor.GetComponent<KinectPointController>().Ready.ToString());
                 Debug.Log("CONTROL: " + m_HasControl.ToString());
+
                 if (Skeletor.GetComponent<KinectPointController>().Ready && m_HasControl)
                 {
                     rigidbody.AddForce(rigidbody.transform.forward * speed * Time.deltaTime);
@@ -236,7 +245,7 @@ public class Player : MonoBehaviour
             else
                 rigidbody.AddForce(rigidbody.transform.forward * speed * Time.deltaTime);
         }
-        else if (WinningStatus)
+        else if(WinningStatus)
         {
             rigidbody.velocity /= 1.05f;
         }
@@ -253,17 +262,17 @@ public class Player : MonoBehaviour
 
     void Leaning()
     {
-
+        
         rigidbody.transform.position += new Vector3(
             rigidbody.transform.right.x * DeltaMovement,
             rigidbody.transform.right.y * DeltaMovement,
             rigidbody.transform.right.z * DeltaMovement);         //Leaning solution
 
-        if (DeltaMovement > LeanThreshold)
+        if(DeltaMovement > LeanThreshold)
         {
             anim.SetBool("TurnRight", true);
         }
-        else if (DeltaMovement < -LeanThreshold)
+        else if(DeltaMovement < -LeanThreshold)
         {
             anim.SetBool("TurnLeft", true);
         }
@@ -277,7 +286,7 @@ public class Player : MonoBehaviour
 
         ReachingOutLeftHand();
         ReachingOutRightHand();
-
+             
     }
 
     void Positioning()
@@ -295,7 +304,7 @@ public class Player : MonoBehaviour
                 rigidbody.transform.position = new Vector3(rigidbody.transform.position.x, rigidbody.transform.position.y, mid.z + DeltaMovement * rigidbody.transform.right.z);
             }
 
-
+            
             if ((PreviousKinectPosition - DeltaMovement) > LeanThreshold)
             {
                 anim.SetBool("TurnLeft", true);
@@ -321,8 +330,10 @@ public class Player : MonoBehaviour
 
     void ReachingOutLeftHand()
     {
-        if (DirX)
+        if(DirX)
         {
+
+            Debug.Log("LEFTHAND: " + (LeftHand.x));
             if ((Vector3.Distance(transform.position, Arms[1].transform.position)) > Threshold)
             {
                 anim.SetBool("LeftArm", true);
@@ -334,6 +345,7 @@ public class Player : MonoBehaviour
         }
         else
         {
+            Debug.Log("LEFTHAND: " + (LeftHand.x - transform.position.z));
             if ((Vector3.Distance(transform.position, Arms[1].transform.position)) > Threshold)
             {
                 anim.SetBool("LeftArm", true);
@@ -343,12 +355,12 @@ public class Player : MonoBehaviour
                 anim.SetBool("LeftArm", false);
             }
         }
-
+        
     }
 
     void ReachingOutRightHand()
     {
-        if (DirX)
+        if(DirX)
         {
             if ((Vector3.Distance(transform.position, Arms[0].transform.position)) > Threshold)
             {
@@ -382,10 +394,9 @@ public class Player : MonoBehaviour
 
     void OnTriggerEnter(Collider Other)
     {
-        m_HasCollided = true;
-        //if (!UsingKinect)
-        //{
-            if (CanRotate)
+        if(!UsingKinect)
+        {
+            if(CanRotate)
             {
                 if (Other.tag.Equals("LeftTurn"))
                 {
@@ -402,31 +413,40 @@ public class Player : MonoBehaviour
                     CanRotate = false;
 
                     StartCoroutine("RotateDelay");
-                }
+                } 
             }
-        //}
-
+        }
+        if (Other.gameObject.layer != 18 && Other.gameObject.layer != 19 && Other.gameObject.layer != 20 && Other.gameObject.layer != 21 && Other.gameObject.layer != 15 && Other.gameObject.layer != 0)
+        {
+            m_HasCollided = true;
+            Debug.Log("Layer: " + Other.gameObject.layer);
+            CollisionObject = Other.gameObject.GetComponent<Obstacles>().ID;
+        }
+       
 
         // 10-13 = Obstacles + powerups
         if (Other.gameObject.layer == 10)
         {
-            rigidbody.AddForce(rigidbody.transform.forward * CoffeePowerUp);
+            rigidbody.AddForce(-rigidbody.transform.forward * BlueObstacleSlowdown);
             Highscore += GreenPoints * (int)rigidbody.velocity.magnitude;
             AchievedPoint = GreenPoints * (int)rigidbody.velocity.magnitude;
+
         }
         else if (Other.gameObject.layer == 11)
         {
-            rigidbody.AddForce(-rigidbody.transform.forward * BlueObstacleSlowdown);
+            rigidbody.AddForce(-rigidbody.transform.forward * RedObstacleSlowdown);
             Highscore += BluePoints * (int)rigidbody.velocity.magnitude;
             AchievedPoint = BluePoints * (int)rigidbody.velocity.magnitude;
+
         }
         else if (Other.gameObject.layer == 12)
         {
             rigidbody.AddForce(-rigidbody.transform.forward * RedObstacleSlowdown);
             Highscore += RedPoints * (int)rigidbody.velocity.magnitude;
             AchievedPoint = RedPoints * (int)rigidbody.velocity.magnitude;
+
         }
-        // 15-20
+            // 15-20
         else if (Other.gameObject.layer == 15)
         {
             WinningStatus = true;
@@ -434,6 +454,7 @@ public class Player : MonoBehaviour
         }
         else if (Other.gameObject.layer == 16)      //SHIELD powerup
         {
+            SHIELD = true;
 
         }
         else if (Other.gameObject.layer == 20)
@@ -453,7 +474,7 @@ public class Player : MonoBehaviour
     private IEnumerator WinDelay()
     {
         yield return new WaitForSeconds(2.0f);
-
+        
 
         Win();
     }
@@ -465,9 +486,12 @@ public class Player : MonoBehaviour
         StartMoving = true;
     }
 
+
     private IEnumerator CooldownShield()
     {
         yield return new WaitForSeconds(ShieldCooldown);
+
+        SHIELD = false;
     }
     //  End of Coroutines
 
@@ -481,14 +505,14 @@ public class Player : MonoBehaviour
 
     void CheckLose()
     {
-        if (rigidbody.transform.forward.x > 0)
+        if(rigidbody.transform.forward.x > 0)
         {
-            if (rigidbody.velocity.x < 0)
+            if(rigidbody.velocity.x < 0)
             {
                 Lose();
             }
         }
-        else if (rigidbody.transform.forward.x < 0)
+        else if(rigidbody.transform.forward.x < 0)
         {
             if (rigidbody.velocity.x > 0)
             {
@@ -502,7 +526,7 @@ public class Player : MonoBehaviour
                 Lose();
             }
         }
-        else if (rigidbody.transform.forward.z < 0)
+        else if(rigidbody.transform.forward.z < 0)
         {
             if (rigidbody.velocity.z > 0)
             {
@@ -513,17 +537,17 @@ public class Player : MonoBehaviour
 
     void Win()
     {
-        Application.LoadLevel("Menu");
+        //Application.LoadLevel("Menu");
         DoneWithSession = true;
     }
 
     void Lose()
     {
-        Application.LoadLevel("Menu");
+        //Application.LoadLevel("Menu");
         DoneWithSession = true;
         WinningStatus = false;
     }
-
+    
     void OnDrawGizmos()
     {
         hit0 = Physics.Raycast(transform.position, transform.right, out hitinfo0, 20.0f, 1 << LayerMask.NameToLayer("Wall"));
@@ -536,7 +560,7 @@ public class Player : MonoBehaviour
 
             //Händer
 
-            if (DirX)
+            if(DirX)
             {
                 Debugvector.Set(transform.position.x, transform.position.y, (transform.position.z - Threshold));
                 Gizmos.DrawCube(Debugvector, new Vector3(0.1f, 0.1f, 0.1f));
@@ -550,7 +574,7 @@ public class Player : MonoBehaviour
                 Debugvector.Set(transform.position.x + Threshold, transform.position.y, transform.position.z);
                 Gizmos.DrawCube(Debugvector, new Vector3(0.1f, 0.1f, 0.1f));
             }
-
+            
         }
         else
         {
@@ -566,5 +590,10 @@ public class Player : MonoBehaviour
     public float AchievedPoints()
     {
         return AchievedPoint;
+    }
+
+    public int GetCollisionObject()
+    {
+        return CollisionObject;
     }
 }
