@@ -63,6 +63,8 @@ public class GameController : MonoBehaviour {
             Application.LoadLevel("Menu");
         }
         Debug.Log(gos[0]);
+
+        tempShot = new Texture2D(500, 500);
     }
     
     IEnumerator LoadMenu()
@@ -81,6 +83,15 @@ public class GameController : MonoBehaviour {
     IEnumerator LoadScore()
     {
         yield return new WaitForSeconds(1.0f);
+        if (MainCharacter != null)
+        {
+            tempScore = worldScript.SaveCurrentScore(tempScore);
+            worldScript.TakeSnapshot(tempShot);
+            worldScript.CArray(10);
+            worldScript.insert(tempScore);
+            worldScript.insertionsort();
+
+        }
         Application.LoadLevel("Score");
     }
 
